@@ -123,8 +123,13 @@ def main():
             paikka=input("Anna paikka: ")
             paiva=input("Anna paiva (pp.kk.vvvv): ")
             paiva=formatTime(paiva)
-            print(paiva)
-            tk.haePaikanTapahtumat(paikka,paiva)
+            status=tk.haePaikanTapahtumat(paikka,paiva)
+            print(status)
+            if len(status)>1:
+                if str(status[0][0][0])=="None":
+                    print("Paikkaa ei löytynyt!")
+                else:
+                    tulostaTaulu(status[0],status[1])
         elif inp=="9":
             tkt=tietokanta.Tietokanta("testbase.db")
             tkt.tehokkuustesti()

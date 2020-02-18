@@ -43,6 +43,9 @@ class Tietokanta:
             self.c.execute("CREATE INDEX idx_asiakkaat ON Asiakkaat (nimi);")
             self.c.execute("CREATE INDEX idx_Paikat ON Paikat (nimi);")
             self.c.execute("CREATE INDEX idx_paketit ON Paketit (seurantakoodi);")
+            self.c.execute("CREATE INDEX idx_paketit_asiakas_id ON Paketit (asiakas_id)")
+            self.c.execute("CREATE INDEX idx_tapahtumat_paketti_id ON Tapahtumat (paketti_id)")
+            self.c.execute("CREATE INDEX idx_tapahtumat_paikka_id ON Tapahtumat (paikka_id)")
         except:
             self.handler.handle(sys.exc_info())
 
@@ -101,11 +104,12 @@ class Tietokanta:
         return self.c.fetchall(),["paketti", "tapahtumia"]
 
     def haePaikanTapahtumat(self, paikka, paiva):
-        paikka_id=self.getPaikka(paikka)
-        self.c.execute("SELECT COUNT(id) FROM Tapahtumat WHERE paikka_id=? AND DATE(aika)=DATE(?)",[paikka_id,paiva])
-        print()
-        print(paikka+":")
-        self.tulostaTaulu(self.c.fetchall(),["Tapahtumia"])
+        try:
+            self.c.execute("SELECT COUNT(id) FROM Tapahtumat WHERE paikka_id=(SELECT id FROM Paikat WHERE nimi=?) AND DATE(aika)=DATE(?)",[paikka,paiva])
+        except:
+            return self.handler.handle(sys.exc_info())
+        return self.c.fetchall(),["tapahtumia"]
+
 
     def tulostaPaikat(self):
         self.c.execute("SELECT * FROM Paikat;")
@@ -132,9 +136,20 @@ class Tietokanta:
         print(t)
 
     def tehokkuustesti(self):
+        print()
+        print("Ilman indeksointia:")
+        print()
+        self.tehokkuustestiSuoritus(False)
+
+        print()
+        print()
+        print("Indeksoituna:")
+        print()
+        self.tehokkuustestiSuoritus(True)
+
+    def tehokkuustestiSuoritus(self, indeksoitu):
         self.deletedb()
 
-        indeksoitu=bool(input("Käytetäänkö indeksointia? (true/false): "))
         self.createdb(indeksoitu)
 
         alku=datetime.now()
@@ -170,5 +185,21 @@ class Tietokanta:
         print("Pakettien lisäämisessä kesti: " + str(datetime.now()-alku))
         alku=datetime.now()
         self.c.executemany("INSERT INTO Tapahtumat (paketti_id, paikka_id, kuvaus, aika) VALUES ((SELECT id FROM Paketit WHERE seurantakoodi=?),(SELECT id FROM Paikat WHERE nimi=?),?,DATETIME('now','localtime'))", tapahtumatParams)
-        print("Tapahtuminen lisäämisessä kesti: " + str(datetime.now()-alku))
+        print("Tapahtumien lisäämisessä kesti: " + str(datetime.now()-alku))
         self.c.execute("COMMIT;")
+
+        i=0
+
+        alku=datetime.now()
+        while i<1000:
+            self.c.execute("SELECT COUNT(id) FROM Paketit WHERE asiakas_id = (SELECT id FROM Asiakkaat WHERE nimi=?)",asiakkaat[i])
+            i+=1
+        print("Asiakkaiden pakettien määrän hakemisessa meni: "+str(datetime.now()-alku))
+
+        i=0
+        alku = datetime.now()
+        while i<2000:
+            self.c.execute("SELECT COUNT(id) FROM Tapahtumat WHERE paketti_id = (SELECT id FROM Paketit WHERE seurantakoodi = ?)", [str(i)])
+            i+=2
+
+        print("Pakettien tapahtumien määrän hakemisessa meni: "+str(datetime.now()-alku))
