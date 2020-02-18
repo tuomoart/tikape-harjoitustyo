@@ -1,0 +1,56 @@
+Tämä on Helsingin yliopiston Tietokantojen perusteet -kurssin harjoitustyö. Tehtävänanto on alapuolella.
+
+
+
+
+Harjoitustyön ohje
+Moni on joskus tilannut paketin netistä ja tarkkaillut sen matkaa kotiovelle seurantakoodin avulla. Tässä harjoitustyössä teemme itse tietokantaa käyttävän sovelluksen, joka voisi olla tällaisen systeemin taustalla.
+
+Yleiskuva
+Järjestelmässä on paikkoja, asiakkaita, paketteja ja tapahtumia.
+
+Paikka on jokin kohde paketin matkan varrella, jossa paketti voidaan skannata. Jokaisella paikalla on eri nimi.
+
+Asiakas on paketin tilaaja. Jokaisella asiakkaalla on eri nimi.
+
+Paketilla on seurantakoodi, jolla siihen voidaan viitata. Jokaisella paketilla on eri seurantakoodi. Paketti liittyy tiettyyn asiakkaaseen.
+
+Kun paketti skannataan, syntyy tapahtuma. Tapahtuma liittyy tiettyyn pakettiin ja tiettyyn paikkaan. Lisäksi tapahtumaan kuuluu kuvaus ja lisäyshetki (päivämäärä ja kellonaika).
+
+Harjoitustyön vaatimukset
+Tietokannan tulee olla suunniteltu luvun 5.1 periaatteiden mukaisesti, eli sen rakenne tulee olla järkevä eikä siinä saa olla toisteista tietoa.
+
+Sovellus toteutetaan Java- tai Python-kielellä komentoriviohjelmana. Sovelluksessa tulee olla valikko, jossa on seuraavat toiminnot:
+
+1. Luo sovelluksen tarvitsemat taulut tyhjään tietokantaan (tätä toimintoa voidaan käyttää, kun tietokantaa ei ole vielä olemassa).
+2. Lisää uusi paikka tietokantaan, kun annetaan paikan nimi.
+3. Lisää uusi asiakas tietokantaan, kun annetaan asiakkaan nimi.
+4. Lisää uusi paketti tietokantaan, kun annetaan paketin seurantakoodi ja asiakkaan nimi. Asiakkaan tulee olla valmiiksi tietokannassa.
+5. Lisää uusi tapahtuma tietokantaan, kun annetaan paketin seurantakoodi, tapahtuman paikka sekä kuvaus. Paketin ja paikan tulee olla valmiiksi tietokannassa.
+6. Hae kaikki paketin tapahtumat seurantakoodin perusteella.
+7. Hae kaikki asiakkaan paketit ja niihin liittyvien tapahtumien määrä.
+8. Hae annetusta paikasta tapahtumien määrä tiettynä päivänä.
+9. Suorita tietokannan tehokkuustesti (tästä lisää alempana).
+
+Jos toiminto epäonnistuu, niin sovelluksen tulee antaa järkevä virheilmoitus.
+
+Tietokantaan ei saa olla mahdollista ilmestyä kahta samannimistä paikkaa tai asiakasta eikä kahta pakettia samalla seurantakoodilla.
+
+
+Tehokkuustesti
+
+Sovelluksen toiminto 9 suorittaa tehokkuustestin, jonka tavoitteena on selvittää, miten hyvin tietokanta toimii, kun tiedon määrä on suuri.
+
+Tehokkuustesti toimii seuraavasti:
+
+1. Tietokantaan lisätään tuhat paikkaa nimillä P1, P2, P3, jne.
+2. Tietokantaan lisätään tuhat asiakasta nimillä A1, A2, A3, jne.
+3. Tietokantaan lisätään tuhat pakettia, jokaiselle jokin asiakas.
+4. Tietokantaan lisätään miljoona tapahtumaa, jokaiselle jokin paketti.
+5. Suoritetaan tuhat kyselyä, joista jokaisessa haetaan jonkin asiakkaan pakettien määrä.
+6. Suoritetaan tuhat kyselyä, joista jokaisessa haetaan jonkin paketin tapahtumien määrä.
+7. Tulosta testin jokaisesta vaiheesta (1–6), paljonko siihen menee aikaa. Älä tulosta mitään muuta testin aikana.
+
+Huom! Suorita vaiheet 1–4 yksittäisen transaktion sisällä, jotta tietokannan rakentamiseen ei mene liikaa aikaa.
+
+Suorita raporttia varten testi kahdesti: ensin tietokannalla, johon ei ole lisätty indeksejä, ja sitten tietokannalla, jossa on sopivat indeksit.
