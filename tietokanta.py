@@ -87,7 +87,10 @@ class Tietokanta:
 
     def getPaikka(self, nimi):
         self.c.execute("SELECT id FROM Paikat WHERE nimi = ?",[nimi])
-        return int(self.c.fetchone()[0])
+        tulos=self.c.fetchone()
+        if (tulos==None):
+            return 666
+        return int(tulos[0])
 
     def haeTapahtumatKoodilla(self, koodi):
         try:
@@ -104,6 +107,8 @@ class Tietokanta:
         return self.c.fetchall(),["paketti", "tapahtumia"]
 
     def haePaikanTapahtumat(self, paikka, paiva):
+        if(self.getPaikka(paikka)==666):
+            return 666
         try:
             self.c.execute("SELECT COUNT(id) FROM Tapahtumat WHERE paikka_id=(SELECT id FROM Paikat WHERE nimi=?) AND DATE(aika)=DATE(?)",[paikka,paiva])
         except:
@@ -199,7 +204,7 @@ class Tietokanta:
         i=0
         alku = datetime.now()
         while i<2000:
-            self.c.execute("SELECT COUNT(id) FROM Tapahtumat WHERE paketti_id = (SELECT id FROM Paketit WHERE seurantakoodi = ?)", [str(i)])
+            self.c.execute("SELECT COUNT(paketti_id) FROM Tapahtumat WHERE paketti_id = (SELECT id FROM Paketit WHERE seurantakoodi = ?)", [str(i)])
             i+=2
 
         print("Pakettien tapahtumien määrän hakemisessa meni: "+str(datetime.now()-alku))
