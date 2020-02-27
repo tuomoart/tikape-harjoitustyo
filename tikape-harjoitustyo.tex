@@ -1,0 +1,181 @@
+\documentclass{scrartcl}
+
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[finnish]{babel}
+
+\usepackage{makeidx}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{url}
+\usepackage{hyperref}
+
+\usepackage{listings}
+
+\usepackage{tikz}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{skak}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{pifont}
+\usepackage{xcolor}
+
+\usepackage[format=plain,font=it]{caption}
+
+\title{Tietokantojen perusteet - Harjoitustyö}
+\author{Tuomo Artama, 014934065, tuomoart}
+\date{27.2.2020}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    commentstyle=\color{codepurple},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codegreen}
+}
+
+\usetikzlibrary{decorations.pathreplacing}
+
+\lstset{
+  literate={ö}{{\"o}}1
+           {ä}{{\"a}}1
+}
+
+\lstset{language=SQL,
+frame=single,
+basicstyle=\ttfamily \small,
+showstringspaces=false,
+columns=flexible,texcl=true,
+breaklines=true,
+postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+style=mystyle,
+extendedchars=\true}
+\lstset{xleftmargin=20pt,xrightmargin=5pt}
+\lstset{aboveskip=12pt,belowskip=8pt,float}
+
+\lstnewenvironment{code}[1][]%
+{
+   \noindent
+   \minipage{\linewidth}
+   \vspace{0.5\baselineskip}
+   \lstset{#1}}
+{\endminipage}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\section{Sovelluksen ominaisuudet}
+
+Harjoitustyön aiheena oli toteuttaa SQLite-tietokantaa käyttävä paketinseurantasovellus. Harjoitustyösovellukseen on toteutettu kaikki tehtävänannon toiminnot. Sovelluksen avulla voi luoda pakettien seurannan mahdollistavan tietokannan. Tietokantaan voi lisätä paikkoja, asiakkaita ja paketteja. Jokaisella paketilla on jokin asiakas, jolle paketti kuuluu. Tietokantaan voi myös lisätä tapahtumia, joihin jokaiseen liittyy aina paketti, paikka, kuvaus tapahtumasta sekä aika, jolloin tapahtuma on lisätty. Paikoilla ja asiakkailla on nimet ja paketilla on seurantakoodi. Kaikkien näistä tulee olla uniikkeja, eli tietokantaan ei voi lisätä kahta samannimistä asiakasta tai kahta pakettia samalla seurantakoodilla. Tietokannasta on mahdollista hakea jonkin paketin tapahtumat seurantakoodin perusteella, jonkin asiakkaan paketit asiakkaan nimen perusteella tai jonkin paikan tapahtumat tiettynä päivänä.
+
+Jos käyttäjä antaa virheellisen syötteen, siitä kerrotaan virheviestillä. Hakutulokset tulostetaan helppolukuisena taulukkona listan sijaan. Lisäksi sovelluksella voi suorittaa tietokannalle tehokkuustestin, jonka avulla voi verrata indeksoidun ja indeksoimattoman tietokannan eroa. Sovellukseen on myös sisäänrakennettu lisätoimintoja koko tietokannan sisällön näyttämiseen ja esimerkiksi tietokannan poistamiseen, mutta ne eivät ole saatavilla tavalliselle käyttäjälle. Lisätoiminnot saa käyttöön käynnistämällä ohjelman millä tahansa ylimääräisellä parametrilla. Nämä lisätoiminnot eivät ole toteutukseltaan kovinkaan viimeisteltyjä, sillä niitä ei vaadittu tehtävänannossa.
+
+Sovellus on rakennettu niin, että sen pääohjelmana ja käyttöliittymänä toimii harjoitus.py. Tietokantatoiminnallisuus on omana luokkanaan, ja sen apuna on virheenkäsittelyapuri-luokka. Virheenkäsittely toimii sovelluksessa siten, että poikkeuksen tullessa poikkeus välitetään virheenkäsittelijälle. Käsittelijä tulkitsee, millaisesta virheestä on kyse ja palauttaa sen mukaisen koodin tietokantaoliolle. Tietokantaolio palauttaa tämän koodin eteenpäin käyttöliittymälle (pääohjelmalle), joka tulkitsee koodin ja tulostaa sen mukaisen virheviestin. Silloin, kun virheenkäsittelijä ei tunnista virhettä, se tulostaa itse olennaiset tiedot virheestä. Jos sovellukseen haluttaisiin myös muunlainen käyttölittymä, tulisi erityisten virheiden käsittely toteuttaa muutoin, esimerkiksi palauttamalla virhetiedot käyttöliittymälle, joka sitten tulostaisi ne käyttäjän nähtäväksi.
+
+\section{Tietokanta}
+
+\subsection{Tietokantakaavio}
+
+\begin{center}
+\includegraphics[width=0.95\textwidth]{tikape_tietokantakaavio.png}
+\end{center}
+
+\subsection{SQL-skeema}
+
+\begin{code}
+  CREATE TABLE Asiakkaat (id INTEGER PRIMARY KEY, nimi TEXT UNIQUE);
+
+  CREATE TABLE Paikat (id INTEGER PRIMARY KEY, nimi TEXT UNIQUE);
+
+  CREATE TABLE Paketit (id INTEGER PRIMARY KEY, asiakas_id INTEGER,
+  seurantakoodi TEXT UNIQUE);
+
+  CREATE TABLE Tapahtumat (id INTEGER PRIMARY KEY, paketti_id INTEGER,
+  paikka_id INTEGER, kuvaus TEXT, aika DATE);
+
+  CREATE TRIGGER asiakas_ei_loydy_lisatessa_paketti BEFORE INSERT ON
+  Paketit BEGIN SELECT CASE WHEN NEW.asiakas_id IS NULL THEN
+  RAISE(ABORT,'Asiakasta ei loydy!') END; END;
+
+  CREATE TRIGGER paketti_ei_loydy_lisatessa_tapahtuma BEFORE INSERT ON
+  Tapahtumat BEGIN SELECT CASE WHEN NEW.paikka_id IS NULL THEN
+  RAISE(ABORT, 'Paikkaa ei loydy!') END; END;
+
+  CREATE TRIGGER paikka_ei_loydy_lisatessa_tapahtuma BEFORE INSERT ON
+  Tapahtumat BEGIN SELECT CASE WHEN NEW.paketti_id IS NULL THEN
+  RAISE(ABORT, 'Pakettia ei loydy!') END; END;
+
+  CREATE INDEX idx_asiakkaat ON Asiakkaat (nimi);
+
+  CREATE INDEX idx_Paikat ON Paikat (nimi);
+
+  CREATE INDEX idx_paketit ON Paketit (seurantakoodi);
+
+  CREATE INDEX idx_paketit_asiakas_id ON Paketit (asiakas_id);
+
+  CREATE INDEX idx_tapahtumat_paketti_id ON Tapahtumat (paketti_id);
+
+  CREATE INDEX idx_tapahtumat_paikka_id ON Tapahtumat (paikka_id);
+\end{code}
+
+\section{Tehokkuustesti}
+
+Sovellukseen on toteutettu tehtävänannon mukainen tehokkuustesti. Asiakkaat, paikat ja paketit on lisätty indekseillä $1-1000$ ja tapahtumat on lisätty satunnaisesti valituille paketeille. Tehokkuustestin kyselyt tehdään samaten satunnaisille asiakkaille ja paketeille. Alla on ohjelman tulostamat kestot:
+
+\begin{code}
+  Ilman indeksointia:
+
+  Paikkojen lisaamisessa kesti: 0:00:00.001494
+  Asiakkaiden lisaamisessa kesti: 0:00:00.001325
+  Pakettien lisaamisessa kesti: 0:00:00.002280
+  Tapahtumien lisaamisessa kesti: 0:00:04.216910
+  Asiakkaiden pakettien maaran hakemisessa meni: 0:00:00.084750
+  Pakettien tapahtumien maaran hakemisessa meni: 0:01:02.476351
+
+
+  Indeksoituna:
+
+  Paikkojen lisaamisessa kesti: 0:00:00.002003
+  Asiakkaiden lisaamisessa kesti: 0:00:00.001952
+  Pakettien lisaamisessa kesti: 0:00:00.005958
+  Tapahtumien lisaamisessa kesti: 0:00:14.779937
+  Asiakkaiden pakettien maaran hakemisessa meni: 0:00:00.037650
+  Pakettien tapahtumien maaran hakemisessa meni: 0:00:00.052183
+\end{code}
+
+Erillisillä suoirtuskerroilla tulokset olivat hyvin lähellä toisiaan. Kuten nähdään, indeksoimattomassa tietokannassa lisääminen onnistuu hieman nopeammin, mutta pakettien tapahtumien määrän hakeminen on merkittävästi hitaampaa. Indeksoidussa tietokannassa lisätessä indeksit on luotava, mikä monimutkaistaa ja hidastaa lisäysprosessia hieman, mutta niistä saatava nopeusetu hakiessa on selkeästi suurempi kuin lisäämisen hidastuminen. Käyttämässäni tietokannassa on hieman ylimääräisiäkin indeksejä kun otetaan huomioon tehtävänanto, mutta päätin jättää ne paikalleen, sillä tämäntyylisessä oikeassa tietokannassa niistä olisi hyötyä, sillä toimintoja ja erilaisia kyselyitä olisi enemmän.
+
+Havaitsin tehokkuustestiä tehdessä myös, että yllättävän suuri merkitys paketin tapahtumien määrän hakemiseen on sillä, yhdistääkö taulut Tapahtumat ja Paketit vai käyttääkö paketin id:n hakemiseen alikyselyä. Alikysely oli nopein, ja molempien taulujen käyttö WHERE-ehdolla oli lähes yhtä nopea. LEFT JOIN -yhdistäminen sen sijaan oli moninkertaisesti hitaampaa. Kyseessä saattaa kuitenkin vain olla virhe, tai jokin käyttämäni ratkaisun erityisominaisuus, enkä tutkinut tätä asiaa sen tarkemmin.
+
+\section{Tiedon yksilöllisyyden varmistaminen}
+
+Toteuttamassani sovelluksessa tiedon yksilöllisyys ja sen olemassaolo on varmistettu lähes kokonaan tietokannan sisäisillä ominaisuuksilla. Asiakkaiden, paikkojen ja pakettien yksilöllisyys on varmistettu määrittämällä niitä vastavissa tauluissa sopiville sarakkeille ehto UNIQUE. Lisättäessä esimerkiksi pakettia, on halutun asiakkaan olemassaolo varmistettu ehdolla, ettei paketteihin lisätessä asiakas\textunderscore id:n arvo saa olla NULL. Tällöin ohjelma ei lisää pakettia olemattomalle asiakkaalle vaan ilmoittaa käyttäjälle asiakkaan puuttumisesta. Ehto itsessään on toteutettu SQLite-laukaisimen (trigger) avulla, vaikkakin jälkeenpäin havaitsin, että helpompiakin vaihtoehtoja olisi saattanut löytyä. Vastaavat laukaisimet vahtivat myös tapahtumien lisäämistä.
+
+Kaikki tietokannan toiminnot tehdään yksittäisissä transaktioissa ja useimmiten vain yhdessä komennossa. Tällä varmistutaan siitä, ettei rinnakkainen tietokannan käyttäminen ole ongelma. Tiedon yksilöllisyyteen liittyvää varmistamista ei tehdä erikseen, vaan tietokanta huolehtii siitä itse, minkä seurauksena tieto säilyy yksilöllisenä vaikka useat käyttäjät yrittäisivät lisätä samaa arvoa samaan tauluun samaan aikaan. Tietokantasovellukseni ei ole kuitenkaan tehty rinnakkaiseen käyttöön, sillä jos sovelluksen tarvitsema taulu on varattuna, se ei osaa odottaa ja yrittää uudestaan sen vapautuessa vaan suoritus keskeytyy. Rinnakkainen käyttö onnistuu sovelluksessani niin kauan, kuin käyttö on vuorottaista. Aidosti samanaikainen käyttäminen johtaisi toisen käyttäjän toiminnon epäonnistumiseen.
+
+\section{Lähdekoodi}
+
+Lähdekoodi on saatavilla myös GitHub:ssa: \url{https://github.com/tuomoart/tikape-harjoitustyo}
+
+\subsection{Pääohjelma}
+
+\lstinputlisting[language=Python]{harjoitus.py}
+
+\subsection{Tietokanta}
+
+\lstinputlisting[language=Python]{tietokanta.py}
+
+\subsection{Virheenkäsittelyapuri}
+
+\lstinputlisting[language=Python]{DbExceptionHandler.py}
+
+\end{document}
