@@ -16,6 +16,7 @@ class DbExceptionHandler:
             return 5
         elif str(exception[1])=="Paikkaa ei loydy!":
             return 6
+        elif str(exception[1])=="UNIQUE constraint failed: Paikat.nimi":
+            return 7
         print("Tuntematon virhe:")
         print(exception)
-        return 2

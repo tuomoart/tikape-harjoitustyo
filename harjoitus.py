@@ -12,17 +12,20 @@ def timeFormatHelper(aika):
     return str(aika)
 
 def formatTime(aika):
-    palat=aika.split(".")
-    palat[1]=timeFormatHelper(palat[1])
-    palat[0]=timeFormatHelper(palat[0])
-    uusiAika=""
-    i=len(palat)-1
-    while i>=0:
-        uusiAika=uusiAika+palat[i]
-        if i!=0:
-            uusiAika=uusiAika+"-"
-        i=i-1
-    return uusiAika
+    try:
+        palat=aika.split(".")
+        palat[1]=timeFormatHelper(palat[1])
+        palat[0]=timeFormatHelper(palat[0])
+        uusiAika=""
+        i=len(palat)-1
+        while i>=0:
+            uusiAika=uusiAika+palat[i]
+            if i!=0:
+                uusiAika=uusiAika+"-"
+            i=i-1
+        return uusiAika
+    except:
+        return -1
 
 def tulostaOhjeet():
     print("Valitse toiminto (1-9):")
@@ -36,11 +39,12 @@ def tulostaOhjeet():
     print("7:  Hae asiakkaan paketit")
     print("8:  Hae paikan tapahtumien määrä")
     print("9:  Suorita tehokkuustesti")
-    print("10: Poista tietokanta")
-    print("12: Tulosta taulu 'Paikat'")
-    print("13: Tulosta taulu 'Asiakkaat'")
-    print("14: Tulosta taulu 'Paketit'")
-    print("15: Tulosta taulu 'Tapahtumat'")
+    if unlocked:
+        print("10: Poista tietokanta")
+        print("12: Tulosta taulu 'Paikat'")
+        print("13: Tulosta taulu 'Asiakkaat'")
+        print("14: Tulosta taulu 'Paketit'")
+        print("15: Tulosta taulu 'Tapahtumat'")
 
 def tulostaTaulu(taulu, otsikot):
     t=PrettyTable(otsikot)
@@ -56,7 +60,7 @@ def main():
     clear()
     while True:
         tulostaOhjeet()
-        inp=input("syota komento: ")
+        inp=input("syötä komento: ")
         print()
         if inp=="":
             clear()
@@ -72,7 +76,7 @@ def main():
             status=tk.lisaaPaikka(nimi)
             if status==0:
                 print("Paikka lisätty!")
-            elif status==2:
+            elif status==7:
                 print("Paikka on jo lisätty!")
         elif inp=="3":
             nimi=input("Asiakkaan nimi: ")
@@ -106,23 +110,26 @@ def main():
         elif inp=="6":
             koodi=input("Anna seurantakoodi: ")
             status=tk.haeTapahtumatKoodilla(koodi)
-            if len(status)>1:
-                if len(status[0])==0:
-                    print("Pakettia ei löytynyt!")
-                else:
-                    tulostaTaulu(status[0],status[1])
+            if status==665:
+                print("Pakettia ei löytynyt!")
+            else:
+                tulostaTaulu(status[0],status[1])
         elif inp=="7":
             nimi=input("Asiakkaan nimi: ")
             status=tk.haeAsiakkaanPaketit(nimi)
-            if len(status)>1:
-                if str(status[0][0][0])=="None":
-                    print("Asiakasta ei löytynyt!")
-                else:
-                    tulostaTaulu(status[0],status[1])
+            if status==664:
+                print("Asiakasta ei löytynyt!")
+            else:
+                tulostaTaulu(status[0],status[1])
         elif inp=="8":
             paikka=input("Anna paikka: ")
-            paiva=input("Anna paiva (pp.kk.vvvv): ")
-            paiva=formatTime(paiva)
+            while True:
+                paiva=input("Anna paiva (pp.kk.vvvv): ")
+                paiva=formatTime(paiva)
+                if paiva==-1:
+                    print("Virheellinen päivämäärän muoto!")
+                    continue
+                break
             status=tk.haePaikanTapahtumat(paikka,paiva)
             if status==666:
                 print("Paikkaa ei löytynyt!")
@@ -131,24 +138,30 @@ def main():
         elif inp=="9":
             tkt=tietokanta.Tietokanta("testbase.db")
             tkt.tehokkuustesti()
-        elif inp=="10":
+        elif inp=="10" and unlocked:
             tk.deletedb()
             print("Tietokanta poistettu")
-        elif inp=="12":
+        elif inp=="12" and unlocked:
             print("Paikat:")
             tk.tulostaPaikat()
-        elif inp=="13":
+        elif inp=="13" and unlocked:
             print("Asiakkaat:")
             tk.tulostaAsiakkaat()
-        elif inp=="14":
+        elif inp=="14" and unlocked:
             print("Paketit:")
             tk.tulostaPaketit()
-        elif inp=="15":
+        elif inp=="15" and unlocked:
             print("Tapahtumat:")
             tk.tulostaTapahtumat()
         else:
             print("Virheellinen komento!")
         input("Paina enter jatkaaksesi")
         clear()
+
+
+if len(sys.argv)>1:
+    unlocked=True
+else:
+    unlocked=False
 
 main()
